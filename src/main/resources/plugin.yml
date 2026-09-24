@@ -1,3 +1,7 @@
+name: PandaCreators
+version: 1.0-SNAPSHOT
+main: com.pandaverse.creators.PandaCreators
+api-version: 1.20
 commands:
   creator:
     description: Opens the creator main menu
