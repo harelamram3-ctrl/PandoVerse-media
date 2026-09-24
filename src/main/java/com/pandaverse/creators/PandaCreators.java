@@ -54,7 +54,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         getCommand("creatorpanel").setExecutor(this);
         getServer().getPluginManager().registerEvents(this, this);
 
-        getLogger().info(ChatColor.GREEN + "PandaCreators has been enabled successfully with ActionBars!");
+        getLogger().info(ChatColor.GREEN + "PandaCreators has been enabled with Levels and ActionBars!");
     }
 
     private void loadConfigValues() {
@@ -62,11 +62,18 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         discordLink = getConfig().getString("discord-link", "https://discord.gg/pandaverse");
     }
 
-    // פונקציית עזר להצגת הודעה גם בצ'אט וגם כ-Action Bar על המסך למשך שתי שניות
     private void sendAlert(Player player, String message) {
         String colored = ChatColor.translateAlternateColorCodes('&', message);
         player.sendMessage(colored);
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(colored));
+    }
+
+    // בדיקת רמת יוצר התוכן של השחקן לפי הרשאות
+    private int getCreatorLevel(Player player) {
+        if (player.hasPermission("panda.creator.level3") || player.isOp()) return 3;
+        if (player.hasPermission("panda.creator.level2")) return 2;
+        if (player.hasPermission("panda.creator.level1")) return 1;
+        return 0; // ללא רמה
     }
 
     @Override
@@ -89,7 +96,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         }
 
         if (command.getName().equalsIgnoreCase("creatorpanel")) {
-            if (!player.hasPermission("panda.creator.panel")) {
+            if (getCreatorLevel(player) <= 0) {
                 sendAlert(player, "&cפקודה זו מיועדת ליוצרי התוכן של PANDAVERSE בלבד!");
                 return true;
             }
@@ -110,46 +117,63 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
     }
 
     private void openCreatorDashboard(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 45, ChatColor.translateAlternateColorCodes('&', "&d&lפאנל יוצרי תוכן - PANDAVERSE"));
+        int level = getCreatorLevel(player);
+        Inventory gui = Bukkit.createInventory(null, 45, ChatColor.translateAlternateColorCodes('&', "&d&lפאנל יוצרי תוכן (רמה " + level + ")"));
 
+        // רמה 1 - זמין לכולם (רמה 1 ומעלה)
         boolean isFlying = player.getAllowFlight();
-        gui.setItem(10, createGuiItem(isFlying ? Material.FEATHER : Material.ENDER_PEARL, "&b&lמצב מעוף (Flight)", 
-                Arrays.asList(ChatColor.GRAY + "סטטוס: " + (isFlying ? ChatColor.GREEN + "מופעל" : ChatColor.RED + "כבוי"), ChatColor.YELLOW + "לחץ להפעלה/כיבוי.")));
+        gui.setItem(10, createGuiItem(level >= 1 ? (isFlying ? Material.FEATHER : Material.ENDER_PEARL) : Material.BARRIER, 
+                "&b&lמצב מעוף (Flight)", 
+                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "סטטוס: " + (isFlying ? ChatColor.GREEN + "מופעל" : ChatColor.RED + "כבוי"), level >= 1 ? ChatColor.YELLOW + "לחץ להפעלה/כיבוי." : ChatColor.CROSSED_OUT + "נעול לרמה גבוהה יותר")));
 
         boolean isPhoto = photoModeCreators.contains(player.getUniqueId());
-        gui.setItem(11, createGuiItem(isPhoto ? Material.COMPARATOR : Material.CLOCK, "&e&lמצב צילום (שקט ובוקר)", 
-                Arrays.asList(ChatColor.GRAY + "מנקה צ'אט וקובע בוקר אישי.", ChatColor.YELLOW + "לחץ להפעלה/כיבוי.")));
+        gui.setItem(11, createGuiItem(level >= 1 ? (isPhoto ? Material.COMPARATOR : Material.CLOCK) : Material.BARRIER, 
+                "&e&lמצב צילום (שקט ובוקר)", 
+                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "מנקה צ'אט וקובע בוקר אישי.", level >= 1 ? ChatColor.YELLOW + "לחץ להפעלה/כיבוי." : ChatColor.CROSSED_OUT + "נעול")));
 
-        boolean isEvent = eventModeCreators.contains(player.getUniqueId());
-        gui.setItem(12, createGuiItem(isEvent ? Material.GOLDEN_APPLE : Material.SHIELD, "&a&lמצב איוונט (חסינות מוות)", 
-                Arrays.asList(ChatColor.GRAY + "מונע נזק ומעניק ראיית לילה.", ChatColor.YELLOW + "לחץ להפעלה/כיבוי.")));
+        gui.setItem(20, createGuiItem(level >= 1 ? Material.COMPASS : Material.BARRIER, 
+                "&6&lשמירת נקודת צילום", 
+                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "שמור מיקום נוכחי לחזרה מהירה.", level >= 1 ? ChatColor.YELLOW + "לחץ לשמירה." : ChatColor.CROSSED_OUT + "נעול")));
 
+        gui.setItem(21, createGuiItem(level >= 1 ? Material.ENDER_EYE : Material.BARRIER, 
+                "&5&lחזרה לנקודת הצילום", 
+                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "טלפורט מיידי למיקום ששמרת.", level >= 1 ? ChatColor.YELLOW + "לחץ לטלפורט." : ChatColor.CROSSED_OUT + "נעול")));
+
+        gui.setItem(23, createGuiItem(level >= 1 ? Material.POTION : Material.BARRIER, 
+                "&f&lמהירות תנועה קלה (Speed)", 
+                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "מעניק זריזות להליכה חלקה.", level >= 1 ? ChatColor.YELLOW + "לחץ להפעלה." : ChatColor.CROSSED_OUT + "נעול")));
+
+
+        // רמה 2 ומעלה
         boolean isHidden = hidePlayersMode.contains(player.getUniqueId());
-        gui.setItem(13, createGuiItem(isHidden ? Material.GLASS : Material.TINTED_GLASS, "&7&lהסתרת שחקנים בסביבה", 
-                Arrays.asList(ChatColor.GRAY + "מסתיר שחקנים אחרים לצילום נקי.", ChatColor.YELLOW + "לחץ להפעלה/כיבוי.")));
+        gui.setItem(13, createGuiItem(level >= 2 ? (isHidden ? Material.GLASS : Material.TINTED_GLASS) : Material.BARRIER, 
+                "&7&lהסתרת שחקנים בסביבה", 
+                Arrays.asList(ChatColor.GRAY + "דרישה: &eרמה 2+", ChatColor.GRAY + "מסתיר שחקנים אחרים לצילום נקי.", level >= 2 ? ChatColor.YELLOW + "לחץ להפעלה/כיבוי." : ChatColor.RED + "דורש רמה 2!")));
 
         boolean isRain = rainWeatherCreators.contains(player.getUniqueId());
-        gui.setItem(14, createGuiItem(isRain ? Material.WATER_BUCKET : Material.SUNFLOWER, "&3&lמזג אוויר אישי", 
-                Arrays.asList(ChatColor.GRAY + "קובע מזג אוויר אישי רק לך.", ChatColor.YELLOW + "לחץ להחלפה.")));
+        gui.setItem(14, createGuiItem(level >= 2 ? (isRain ? Material.WATER_BUCKET : Material.SUNFLOWER) : Material.BARRIER, 
+                "&3&lמזג אוויר אישי", 
+                Arrays.asList(ChatColor.GRAY + "דרישה: &eרמה 2+", ChatColor.GRAY + "קובע מזג אוויר אישי רק לך.", level >= 2 ? ChatColor.YELLOW + "לחץ להחלפה." : ChatColor.RED + "דורש רמה 2!")));
 
-        gui.setItem(19, createGuiItem(Material.FIREWORK_ROCKET, "&d&lשיגור זיקוקי קונפטי", 
-                Arrays.asList(ChatColor.GRAY + "יוצר אפקט חגיגי סביבך לשידור!", ChatColor.YELLOW + "לחץ להפעלה.")));
+        gui.setItem(19, createGuiItem(level >= 2 ? Material.FIREWORK_ROCKET : Material.BARRIER, 
+                "&d&lשיגור זיקוקי קונפטי", 
+                Arrays.asList(ChatColor.GRAY + "דרישה: &eרמה 2+", ChatColor.GRAY + "יוצר אפקט חגיגי סביבך לשידור!", level >= 2 ? ChatColor.YELLOW + "לחץ להפעלה." : ChatColor.RED + "דורש רמה 2!")));
 
-        gui.setItem(20, createGuiItem(Material.COMPASS, "&6&lשמירת נקודת צילום", 
-                Arrays.asList(ChatColor.GRAY + "שמור מיקום נוכחי לחזרה מהירה.", ChatColor.YELLOW + "לחץ לשמירה.")));
+        boolean hasGlowing = player.isGlowing();
+        gui.setItem(22, createGuiItem(level >= 2 ? Material.GLOW_INK_SAC : Material.BARRIER, 
+                "&b&lאפקט זוהר לצילום (Glowing)", 
+                Arrays.asList(ChatColor.GRAY + "דרישה: &eרמה 2+", ChatColor.GRAY + "נותן לך זוהר קל בחושך.", level >= 2 ? ChatColor.YELLOW + "לחץ להפעלה." : ChatColor.RED + "דורש רמה 2!")));
 
-        gui.setItem(21, createGuiItem(Material.ENDER_EYE, "&5&lחזרה לנקודת הצילום", 
-                Arrays.asList(ChatColor.GRAY + "טלפורט מיידי למיקום ששמרת.", ChatColor.YELLOW + "לחץ לטלפורט.")));
 
-        gui.setItem(22, createGuiItem(Material.GLOW_INK_SAC, "&b&lאפקט זוהר לצילום (Glowing)", 
-                Arrays.asList(ChatColor.GRAY + "נותן לך זוהר קל בחושך.", ChatColor.YELLOW + "לחץ להפעלה.")));
+        // רמה 3 ומעלה (הכי מתקדם - איוונטים והכרזות)
+        boolean isEvent = eventModeCreators.contains(player.getUniqueId());
+        gui.setItem(12, createGuiItem(level >= 3 ? (isEvent ? Material.GOLDEN_APPLE : Material.SHIELD) : Material.BARRIER, 
+                "&a&lמצב איוונט (חסינות מוות)", 
+                Arrays.asList(ChatColor.GRAY + "דרישה: &cרמה 3 (מתקדם)", ChatColor.GRAY + "מונע נזק ומעניק ראיית לילה.", level >= 3 ? ChatColor.YELLOW + "לחץ להפעלה/כיבוי." : ChatColor.RED + "דורש רמה 3!")));
 
-        gui.setItem(23, createGuiItem(Material.POTION, "&f&lמהירות תנועה קלה (Speed)", 
-                Arrays.asList(ChatColor.GRAY + "מעניק זריזות להליכה חלקה.", ChatColor.YELLOW + "לחץ להפעלה.")));
-
-        gui.setItem(28, createGuiItem(Material.RED_CONCRETE, "&c&lהכרזת לייב חדש", Arrays.asList(ChatColor.GRAY + "פרסם שידור חי לכל השרת.")));
-        gui.setItem(31, createGuiItem(Material.GOLD_INGOT, "&e&lהכרזת הגרלה", Arrays.asList(ChatColor.GRAY + "פרסם הגרלה שווה לקהילה.")));
-        gui.setItem(34, createGuiItem(Material.DIAMOND, "&b&lהכרזת סרטון / איוונט", Arrays.asList(ChatColor.GRAY + "פרסם סרטון או איוונט חדש.")));
+        gui.setItem(28, createGuiItem(level >= 3 ? Material.RED_CONCRETE : Material.BARRIER, "&c&lהכרזת לייב חדש", Arrays.asList(ChatColor.GRAY + "דרישה: &cרמה 3", level >= 3 ? ChatColor.GRAY + "פרסם שידור חי לכל השרת." : ChatColor.RED + "דורש רמה 3!")));
+        gui.setItem(31, createGuiItem(level >= 3 ? Material.GOLD_INGOT : Material.BARRIER, "&e&lהכרזת הגרלה", Arrays.asList(ChatColor.GRAY + "דרישה: &cרמה 3", level >= 3 ? ChatColor.GRAY + "פרסם הגרלה שווה לקהילה." : ChatColor.RED + "דורש רמה 3!")));
+        gui.setItem(34, createGuiItem(level >= 3 ? Material.DIAMOND : Material.BARRIER, "&b&lהכרזת סרטון / איוונט", Arrays.asList(ChatColor.GRAY + "דרישה: &cרמה 3", level >= 3 ? ChatColor.GRAY + "פרסם סרטון או איוונט חדש." : ChatColor.RED + "דורש רמה 3!")));
 
         player.openInventory(gui);
     }
@@ -173,29 +197,25 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         Inventory gui = Bukkit.createInventory(null, 27, ChatColor.translateAlternateColorCodes('&', "&b&lPANDAVERSE - יוצרי תוכן"));
         gui.setItem(10, createGuiItem(Material.PAPER, "&e&lדרישות הסף שלנו", getConfig().getStringList("requirements")));
         gui.setItem(13, createGuiItem(Material.NETHER_STAR, "&a&lהגש בקשה להיות יוצר תוכן", Collections.singletonList(ChatColor.GRAY + "לחץ לשליחת הקישור לערוץ.")));
-        gui.setItem(16, createGuiItem(Material.GOLD_BLOCK, "&6&lהטבות וגישות ליוצרי תוכן", Arrays.asList(ChatColor.GRAY + "לחץ לצפייה בהטבות.")));
+        gui.setItem(16, createGuiItem(Material.GOLD_BLOCK, "&6&lהטבות וגישות לפי רמות", Arrays.asList(ChatColor.GRAY + "לחץ לצפייה ברמות ובהטבות.")));
         gui.setItem(22, createGuiItem(Material.RED_BANNER, "&b&lשרת הדיסקורד שלנו", Arrays.asList(ChatColor.GRAY + "קישור:", ChatColor.BLUE + discordLink)));
         player.openInventory(gui);
     }
 
     private void openPerksGUI(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 27, ChatColor.translateAlternateColorCodes('&', "&6&lPANDAVERSE - הטבות יוצרי תוכן"));
-        gui.setItem(11, createGuiItem(Material.DIAMOND, "&b&lתואר ייחודי בשרת ובדיסקורד", Arrays.asList(ChatColor.GRAY + "טאב מיוחד ותפקיד בדיסקורד.")));
-        gui.setItem(13, createGuiItem(Material.EMERALD, "&a&lפאנל יוצרים עשיר (/creatorpanel)", Arrays.asList(
-                ChatColor.GRAY + "• מעוף אישי ומצב צילום נקי",
-                ChatColor.GRAY + "• מצב איוונט וחסינות מוות",
-                ChatColor.GRAY + "• הסתרת שחקנים ומזג אוויר אישי",
-                ChatColor.GRAY + "• שליחת הכרזות לכל השרת"
-        )));
-        gui.setItem(15, createGuiItem(Material.GLOWSTONE_DUST, "&e&lחשיפה לקהילה", Arrays.asList(ChatColor.GRAY + "פרסום תכנים בערוצים ייעודיים.")));
+        Inventory gui = Bukkit.createInventory(null, 27, ChatColor.translateAlternateColorCodes('&', "&6&lPANDAVERSE - רמות והטבות יוצרים"));
+        gui.setItem(10, createGuiItem(Material.IRON_INGOT, "&b&lרמה 1 (Creator I)", Arrays.asList(ChatColor.GRAY + "• מעוף אישי (/flight)", ChatColor.GRAY + "• מצב צילום נקי ומהירות", ChatColor.GRAY + "• שמירת נקודת צילום")));
+        gui.setItem(13, createGuiItem(Material.GOLD_INGOT, "&e&lרמה 2 (Creator II)", Arrays.asList(ChatColor.GRAY + "• כולל כל הטבות רמה 1", ChatColor.GRAY + "• הסתרת שחקנים ומזג אוויר אישי", ChatColor.GRAY + "• אפקט זוהר ושיגור זיקוקים")));
+        gui.setItem(16, createGuiItem(Material.DIAMOND, "&c&lרמה 3 (Creator III)", Arrays.asList(ChatColor.GRAY + "• כולל כל הטבות רמה 1 ו-2", ChatColor.GRAY + "• מצב איוונט וחסינות מוות", ChatColor.GRAY + "• שליחת הכרזות לכל השרת")));
         player.openInventory(gui);
     }
 
     private void openAdminGUI(Player player) {
         Inventory gui = Bukkit.createInventory(null, 27, ChatColor.translateAlternateColorCodes('&', "&c&lניהול יוצרי תוכן - הנהלה"));
-        gui.setItem(13, createGuiItem(Material.BOOK, "&e&lפקודות מתן הרשאה להנהלה", Arrays.asList(
-                ChatColor.GRAY + "תואר יוצר תוכן:", ChatColor.YELLOW + "/lp user <שחקן> parent add creator",
-                ChatColor.GRAY + "גישה לפאנל המלא:", ChatColor.YELLOW + "/lp user <שחקן> permission set panda.creator.panel true"
+        gui.setItem(13, createGuiItem(Material.BOOK, "&e&lפקודות מתן רמות להנהלה", Arrays.asList(
+                ChatColor.GRAY + "הענקת רמה 1:", ChatColor.YELLOW + "/lp user <שחקן> permission set panda.creator.level1 true",
+                ChatColor.GRAY + "הענקת רמה 2:", ChatColor.YELLOW + "/lp user <שחקן> permission set panda.creator.level2 true",
+                ChatColor.GRAY + "הענקת רמה 3:", ChatColor.YELLOW + "/lp user <שחקן> permission set panda.creator.level3 true"
         )));
         player.openInventory(gui);
     }
@@ -203,10 +223,11 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         String title = event.getView().getTitle();
-        if (title.contains("PANDAVERSE")) {
+        if (title.contains("PANDAVERSE") || title.contains("פאנל יוצרי תוכן")) {
             event.setCancelled(true);
             if (!(event.getWhoClicked() instanceof Player)) return;
             Player player = (Player) event.getWhoClicked();
+            int level = getCreatorLevel(player);
 
             if (title.equals(ChatColor.translateAlternateColorCodes('&', "&b&lPANDAVERSE - יוצרי תוכן"))) {
                 if (event.getRawSlot() == 13) {
@@ -221,17 +242,32 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
                 }
             }
             
-            else if (title.equals(ChatColor.translateAlternateColorCodes('&', "&d&lפאנל יוצרי תוכן - PANDAVERSE"))) {
+            else if (title.startsWith(ChatColor.translateAlternateColorCodes('&', "&d&lפאנל יוצרי תוכן"))) {
                 UUID uuid = player.getUniqueId();
+                int slot = event.getRawSlot();
 
-                if (event.getRawSlot() == 10) {
+                // בדיקת הרשאות לפי רמות בלחיצה בפאנל
+                if ((slot == 10 || slot == 11 || slot == 20 || slot == 21 || slot == 23) && level < 1) {
+                    sendAlert(player, "&cפאנל זה דורש לפחות רמה 1!");
+                    return;
+                }
+                if ((slot == 13 || slot == 14 || slot == 19 || slot == 22) && level < 2) {
+                    sendAlert(player, "&cאפשרות זו דורשת רמה 2 ומעלה!");
+                    return;
+                }
+                if ((slot == 12 || slot == 28 || slot == 31 || slot == 34) && level < 3) {
+                    sendAlert(player, "&cאפשרות זו דורשת רמה 3 (מתקדם)!");
+                    return;
+                }
+
+                if (slot == 10) {
                     boolean current = player.getAllowFlight();
                     player.setAllowFlight(!current);
                     player.setFlying(!current);
                     sendAlert(player, "&8[&bPandaCreators&8] &7מעוף: " + (!current ? "&aמופעל" : "&cכבוי"));
                     player.closeInventory();
                 } 
-                else if (event.getRawSlot() == 11) {
+                else if (slot == 11) {
                     if (photoModeCreators.contains(uuid)) {
                         photoModeCreators.remove(uuid);
                         player.resetPlayerTime();
@@ -245,7 +281,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
                     }
                     player.closeInventory();
                 }
-                else if (event.getRawSlot() == 12) {
+                else if (slot == 12) {
                     if (eventModeCreators.contains(uuid)) {
                         eventModeCreators.remove(uuid);
                         player.removePotionEffect(PotionEffectType.NIGHT_VISION);
@@ -258,7 +294,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
                     }
                     player.closeInventory();
                 }
-                else if (event.getRawSlot() == 13) {
+                else if (slot == 13) {
                     if (hidePlayersMode.contains(uuid)) {
                         hidePlayersMode.remove(uuid);
                         for (Player p : Bukkit.getOnlinePlayers()) player.showPlayer(this, p);
@@ -272,7 +308,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
                     }
                     player.closeInventory();
                 }
-                else if (event.getRawSlot() == 14) {
+                else if (slot == 14) {
                     if (rainWeatherCreators.contains(uuid)) {
                         rainWeatherCreators.remove(uuid);
                         player.resetPlayerWeather();
@@ -284,20 +320,20 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
                     }
                     player.closeInventory();
                 }
-                else if (event.getRawSlot() == 19) {
+                else if (slot == 19) {
                     player.closeInventory();
                     Location loc = player.getLocation();
-                    loc.getWorld().spawnParticle(Particle.FIREWORK, loc.add(0, 1, 0), 35, 0.5, 1, 0.5, 0.1);
+                    loc.getWorld().spawnParticle(Particle.FIREWORK_ROCKET, loc.add(0, 1, 0), 35, 0.5, 1, 0.5, 0.1);
                     loc.getWorld().playSound(loc, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1f, 1f);
                     sendAlert(player, "&8[&bPandaCreators&8] &dשגרת זיקוקי קונפטי!");
                 }
-                else if (event.getRawSlot() == 20) {
+                else if (slot == 20) {
                     player.closeInventory();
                     savedCreatorSpots.put(uuid, player.getLocation());
                     sendAlert(player, "&8[&bPandaCreators&8] &aנקודת הצילום נשמרה בהצלחה!");
                     player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
                 }
-                else if (event.getRawSlot() == 21) {
+                else if (slot == 21) {
                     player.closeInventory();
                     if (savedCreatorSpots.containsKey(uuid)) {
                         player.teleport(savedCreatorSpots.get(uuid));
@@ -307,13 +343,13 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
                         sendAlert(player, "&cטרם שמרת נקודת צילום!");
                     }
                 }
-                else if (event.getRawSlot() == 22) {
+                else if (slot == 22) {
                     player.closeInventory();
                     boolean hasGlowing = player.isGlowing();
                     player.setGlowing(!hasGlowing);
                     sendAlert(player, "&8[&bPandaCreators&8] &7אפקט זוהר: " + (!hasGlowing ? "&aמופעל" : "&cכבוי"));
                 }
-                else if (event.getRawSlot() == 23) {
+                else if (slot == 23) {
                     player.closeInventory();
                     if (player.hasPotionEffect(PotionEffectType.SPEED)) {
                         player.removePotionEffect(PotionEffectType.SPEED);
@@ -323,7 +359,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
                         sendAlert(player, "&8[&bPandaCreators&8] &aהופעלה מהירות תנועה קלה.");
                     }
                 }
-                else if (event.getRawSlot() == 28 || event.getRawSlot() == 31 || event.getRawSlot() == 34) {
+                else if (slot == 28 || slot == 31 || slot == 34) {
                     long cooldownTime = 300 * 1000L;
                     if (broadcastCooldowns.containsKey(uuid)) {
                         long timeLeft = (broadcastCooldowns.get(uuid) + cooldownTime) - System.currentTimeMillis();
@@ -340,8 +376,8 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
                     
                     String type = "live";
                     String nameType = "לייב";
-                    if (event.getRawSlot() == 31) { type = "giveaway"; nameType = "הגרלה"; }
-                    if (event.getRawSlot() == 34) { type = "event"; nameType = "אירוע/סרטון"; }
+                    if (slot == 31) { type = "giveaway"; nameType = "הגרלה"; }
+                    if (slot == 34) { type = "event"; nameType = "אירוע/סרטון"; }
                     
                     broadcastType.put(uuid, type);
                     sendAlert(player, "&8[&bPandaCreators&8] &aכתוב בצ'אט את ההודעה / הקישור עבור ה" + nameType + " שלך:");
