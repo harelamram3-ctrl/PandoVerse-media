@@ -3,17 +3,21 @@ package com.pandaverse.creators;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
@@ -24,11 +28,14 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
     private final Set<UUID> pendingApplication = new HashSet<>();
     private final Map<UUID, String> submittedLinks = new HashMap<>();
     
-    // מעקב אחרי מצב מעוף וזמני השהיה (Cooldown) להכרזות
+    // מעקב אחרי מצבים של יוצרי תוכן
     private final Set<UUID> flyingCreators = new HashSet<>();
+    private final Set<UUID> photoModeCreators = new HashSet<>();
+    private final Set<UUID> eventModeCreators = new HashSet<>();
+    
     private final Map<UUID, Long> broadcastCooldowns = new HashMap<>();
     private final Set<UUID> waitingForBroadcast = new HashSet<>();
-    private final Map<UUID, String> broadcastType = new HashMap<>(); // "live", "giveaway", "event"
+    private final Map<UUID, String> broadcastType = new HashMap<>();
 
     @Override
     public void onEnable() {
@@ -38,7 +45,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         getCommand("creator").setExecutor(this);
         getCommand("creatoradmin").setExecutor(this);
         getCommand("creatorperks").setExecutor(this);
-        getCommand("creatorpanel").setExecutor(this); // פקודת התפריט החדשה ליוצרים
+        getCommand("creatorpanel").setExecutor(this);
         getServer().getPluginManager().registerEvents(this, this);
 
         getLogger().info(ChatColor.GREEN + "PandaCreators has been enabled successfully!");
@@ -68,7 +75,6 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
             return true;
         }
 
-        // פקודת פאנל יוצרי תוכן החדשה
         if (command.getName().equalsIgnoreCase("creatorpanel")) {
             if (!player.hasPermission("panda.creator.panel")) {
                 player.sendMessage(ChatColor.RED + "פקודה זו מיועדת ליוצרי התוכן של PANDAVERSE בלבד!");
@@ -90,45 +96,71 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         return false;
     }
 
-    // תפריט הניהול האישי של יוצר התוכן (Dashboard)
+    // פאנל יוצרי התוכן המעודכן
     private void openCreatorDashboard(Player player) {
         Inventory gui = Bukkit.createInventory(null, 27, ChatColor.translateAlternateColorCodes('&', "&d&lפאנל יוצרי תוכן - PANDAVERSE"));
 
-        // כפתור מעוף
+        // 1. כפתור מעוף
         boolean isFlying = player.getAllowFlight();
         ItemStack flightItem = new ItemStack(isFlying ? Material.FEATHER : Material.ENDER_PEARL);
         ItemMeta flightMeta = flightItem.getItemMeta();
         flightMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&b&lמצב מעוף (Flight)"));
         flightMeta.setLore(Arrays.asList(
-                ChatColor.GRAY + "סטטוס נוכחי: " + (isFlying ? ChatColor.GREEN + "מופעל" : ChatColor.RED + "כבוי"),
-                ChatColor.YELLOW + "לחץ כדי להחליף מצב בלובי!"
+                ChatColor.GRAY + "סטטוס: " + (isFlying ? ChatColor.GREEN + "מופעל" : ChatColor.RED + "כבוי"),
+                ChatColor.YELLOW + "לחץ כדי להפעיל או לכבות מעוף."
         ));
         flightItem.setItemMeta(flightMeta);
         gui.setItem(10, flightItem);
 
-        // כפתור הכרזת לייב
+        // 2. כפתור מצב צילום (ניקוי צ'אט + בוקר אישי)
+        boolean isPhoto = photoModeCreators.contains(player.getUniqueId());
+        ItemStack photoItem = new ItemStack(isPhoto ? Material.COMPARATOR : Material.CLOCK);
+        ItemMeta photoMeta = photoItem.getItemMeta();
+        photoMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&e&lמצב צילום (Photo Mode)"));
+        photoMeta.setLore(Arrays.asList(
+                ChatColor.GRAY + "סטטוס: " + (isPhoto ? ChatColor.GREEN + "מופעל" : ChatColor.RED + "כבוי"),
+                ChatColor.GRAY + "מנקה את הצ'אט וקובע לך בוקר אישי",
+                ChatColor.GRAY + "בעולם בלי להשפיע על אחרים.",
+                ChatColor.YELLOW + "לחץ להפעלה / כיבוי."
+        ));
+        photoItem.setItemMeta(photoMeta);
+        gui.setItem(11, photoItem);
+
+        // 3. כפתור מצב איוונט (אל-מוות + אפקטים)
+        boolean isEvent = eventModeCreators.contains(player.getUniqueId());
+        ItemStack eventModeItem = new ItemStack(isEvent ? Material.TOTEM_OF_UNDYTHING : Material.SHIELD);
+        ItemMeta eventModeMeta = eventModeItem.getItemMeta();
+        eventModeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&a&lמצב איוונט (God Mode & Perks)"));
+        eventModeMeta.setLore(Arrays.asList(
+                ChatColor.GRAY + "סטטוס: " + (isEvent ? ChatColor.GREEN + "מופעל" : ChatColor.RED + "כבוי"),
+                ChatColor.GRAY + "מונע מכל אחד להרוג אותך",
+                ChatColor.GRAY + "ומעניק ראיית לילה ואפקטים.",
+                ChatColor.YELLOW + "לחץ להפעלה / כיבוי."
+        ));
+        eventModeItem.setItemMeta(eventModeMeta);
+        gui.setItem(12, eventModeItem);
+
+        // 4. כפתורי הכרזות (לייב, הגרלה, אירוע)
         ItemStack liveItem = new ItemStack(Material.RED_CONCRETE);
         ItemMeta liveMeta = liveItem.getItemMeta();
         liveMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&c&lהכרזת לייב חדש"));
-        liveMeta.setLore(Arrays.asList(ChatColor.GRAY + "שלח הודעה מיוחדת לכל השרת", ChatColor.GRAY + "שאתה בשידור חי עכשיו!"));
+        liveMeta.setLore(Arrays.asList(ChatColor.GRAY + "שלח הודעת לייב מודגשת לכל השרת."));
         liveItem.setItemMeta(liveMeta);
-        gui.setItem(12, liveItem);
+        gui.setItem(14, liveItem);
 
-        // כפתור הכרזת הגרלה
         ItemStack giveawayItem = new ItemStack(Material.GOLD_INGOT);
         ItemMeta giveawayMeta = giveawayItem.getItemMeta();
         giveawayMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&e&lהכרזת הגרלה"));
-        giveawayMeta.setLore(Arrays.asList(ChatColor.GRAY + "פרסם הגרלה שווה לקהילה", ChatColor.GRAY + "ישירות דרך הצ'אט."));
+        giveawayMeta.setLore(Arrays.asList(ChatColor.GRAY + "פרסם הגרלה לקהילה בצ'אט."));
         giveawayItem.setItemMeta(giveawayMeta);
-        gui.setItem(14, giveawayItem);
+        gui.setItem(15, giveawayItem);
 
-        // כפתור הכרזת אירוע / סרטון
-        ItemStack eventItem = new ItemStack(Material.DIAMOND);
-        ItemMeta eventMeta = eventItem.getItemMeta();
-        eventMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&b&lהכרזת סרטון / אירוע"));
-        eventMeta.setLore(Arrays.asList(ChatColor.GRAY + "שתף סרטון חדש שעלם", ChatColor.GRAY + "או אירוע קרוב בשרת."));
-        eventItem.setItemMeta(eventMeta);
-        gui.setItem(16, eventItem);
+        ItemStack announcementItem = new ItemStack(Material.DIAMOND);
+        ItemMeta announcementMeta = announcementItem.getItemMeta();
+        announcementMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&b&lהכרזת סרטון / אירוע"));
+        announcementMeta.setLore(Arrays.asList(ChatColor.GRAY + "פרסם סרטון או איוונט חדש."));
+        announcementItem.setItemMeta(announcementMeta);
+        gui.setItem(16, announcementItem);
 
         player.openInventory(gui);
     }
@@ -160,7 +192,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         ItemStack perksItem = new ItemStack(Material.GOLD_BLOCK);
         ItemMeta perksMeta = perksItem.getItemMeta();
         perksMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&6&lהטבות וגישות ליוצרי תוכן"));
-        perksMeta.setLore(Arrays.asList(ChatColor.GRAY + "לחץ כדי לראות מה יוצרי", ChatColor.GRAY + "התוכן המיוחדים שלנו מקבלים!"));
+        perksMeta.setLore(Arrays.asList(ChatColor.GRAY + "לחץ כדי לראות מה יוצרי", ChatColor.GRAY + "התוכן שלנו מקבלים!"));
         perksItem.setItemMeta(perksMeta);
         gui.setItem(16, perksItem);
 
@@ -187,7 +219,12 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         ItemStack access = new ItemStack(Material.EMERALD);
         ItemMeta accessMeta = access.getItemMeta();
         accessMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&a&lפאנל יוצרים מתקדם (/creatorpanel)"));
-        accessMeta.setLore(Arrays.asList(ChatColor.GRAY + "גישה למעוף אישי בלובי ויכולת", ChatColor.GRAY + "לפרסם לייבים והגרלות לכל השרת!"));
+        accessMeta.setLore(Arrays.asList(
+                ChatColor.GRAY + "• מעוף אישי בלובי ובשרת",
+                ChatColor.GRAY + "• מצב צילום (ניקוי צ'אט + בוקר אישי)",
+                ChatColor.GRAY + "• מצב איוונט (חסינות מפני מוות ואפקטים)",
+                ChatColor.GRAY + "• שליחת הכרזות לייב והגרלות לכל השרת"
+        ));
         access.setItemMeta(accessMeta);
         gui.setItem(13, access);
 
@@ -225,7 +262,6 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
             if (!(event.getWhoClicked() instanceof Player)) return;
             Player player = (Player) event.getWhoClicked();
 
-            // לחיצה בתפריט הראשי של יוצרי התוכן
             if (title.equals(ChatColor.translateAlternateColorCodes('&', "&b&lPANDAVERSE - יוצרי תוכן"))) {
                 if (event.getRawSlot() == 13) {
                     player.closeInventory();
@@ -239,18 +275,55 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
                 }
             }
             
-            // לחיצה בפאנל האישי של יוצר התוכן (/creatorpanel)
             else if (title.equals(ChatColor.translateAlternateColorCodes('&', "&d&lפאנל יוצרי תוכן - PANDAVERSE"))) {
-                if (event.getRawSlot() == 10) { // מעוף
+                // 1. כפתור מעוף
+                if (event.getRawSlot() == 10) {
                     boolean current = player.getAllowFlight();
                     player.setAllowFlight(!current);
                     player.setFlying(!current);
                     player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8[&bPandaCreators&8] &7מצב מעוף שונה ל: " + (!current ? "&aמופעל" : "&cכבוי")));
                     player.closeInventory();
                 } 
-                else if (event.getRawSlot() == 12 || event.getRawSlot() == 14 || event.getRawSlot() == 16) {
-                    // בדיקת Cooldown (השהיה של 5 דקות בין הכרזות כדי למנוע ספאם)
-                    long cooldownTime = 300 * 1000L; // 5 דקות במילישניות
+                // 2. כפתור מצב צילום
+                else if (event.getRawSlot() == 11) {
+                    UUID uuid = player.getUniqueId();
+                    if (photoModeCreators.contains(uuid)) {
+                        photoModeCreators.remove(uuid);
+                        player.resetPlayerTime(); // מחזיר לזמן הרגיל של השרת
+                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8[&bPandaCreators&8] &cמצב צילום כובה. הזמן הוחזר לרגיל."));
+                    } else {
+                        photoModeCreators.add(uuid);
+                        player.setPlayerTime(0L, false); // קובע שעות בוקר (0) רק לשחקן הזה!
+                        // ניקוי צ'אט אישי על ידי שליחת רווחים ריקים
+                        for (int i = 0; i < 50; i++) {
+                            player.sendMessage("");
+                        }
+                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8[&bPandaCreators&8] &eמצב צילום הופעל! הצ'אט שלך נוקה והזמן הוגדר לבוקר."));
+                        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+                    }
+                    player.closeInventory();
+                }
+                // 3. כפתור מצב איוונט
+                else if (event.getRawSlot() == 12) {
+                    UUID uuid = player.getUniqueId();
+                    if (eventModeCreators.contains(uuid)) {
+                        eventModeCreators.remove(uuid);
+                        player.removePotionEffect(PotionEffectType.NIGHT_VISION);
+                        player.removePotionEffect(PotionEffectType.RESISTANCE);
+                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8[&bPandaCreators&8] &cמצב איוונט כובה. ההגנות והאפקטים הוסרו."));
+                    } else {
+                        eventModeCreators.add(uuid);
+                        // מעניק ראיית לילה ועמידות לנזק כל עוד המצב פעיל (אינסופי עד לכיבוי)
+                        player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, Integer.MAX_VALUE, 0, false, false));
+                        player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, Integer.MAX_VALUE, 0, false, false));
+                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8[&bPandaCreators&8] &aמצב איוונט הופעל! אתה כעת חסין ממוות וקיבלת ראיית לילה."));
+                        player.playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, 1f, 1f);
+                    }
+                    player.closeInventory();
+                }
+                // 4, 5, 6. הכרזות (לייב, הגרלה, סרטון)
+                else if (event.getRawSlot() == 14 || event.getRawSlot() == 15 || event.getRawSlot() == 16) {
+                    long cooldownTime = 300 * 1000L; // 5 דקות השהיה
                     if (broadcastCooldowns.containsKey(player.getUniqueId())) {
                         long timeLeft = (broadcastCooldowns.get(player.getUniqueId()) + cooldownTime) - System.currentTimeMillis();
                         if (timeLeft > 0) {
@@ -266,7 +339,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
                     
                     String type = "live";
                     String nameType = "לייב";
-                    if (event.getRawSlot() == 14) { type = "giveaway"; nameType = "הגרלה"; }
+                    if (event.getRawSlot() == 15) { type = "giveaway"; nameType = "הגרלה"; }
                     if (event.getRawSlot() == 16) { type = "event"; nameType = "אירוע/סרטון"; }
                     
                     broadcastType.put(player.getUniqueId(), type);
@@ -276,11 +349,21 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         }
     }
 
+    // מניעת נזק מיוצרי תוכן שנמצאים במצב איוונט
+    @EventHandler
+    public void onEntityDamage(EntityDamageEvent event) {
+        if (event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+            if (eventModeCreators.contains(player.getUniqueId())) {
+                event.setCancelled(true); // מבטל לחלוטין כל נזק (נפילה, מפלצות, שחקנים אחרים וכו')
+            }
+        }
+    }
+
     @EventHandler
     public void onChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         
-        // טיפול בהגשת בקשה להפוך ליוצר תוכן
         if (pendingApplication.contains(player.getUniqueId())) {
             event.setCancelled(true);
             String link = event.getMessage();
@@ -298,7 +381,6 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
             return;
         }
 
-        // טיפול בהכרזות מיוחדות של יוצרי תוכן בצ'אט השרת
         if (waitingForBroadcast.contains(player.getUniqueId())) {
             event.setCancelled(true);
             waitingForBroadcast.remove(player.getUniqueId());
@@ -306,12 +388,10 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
             String type = broadcastType.getOrDefault(player.getUniqueId(), "live");
             broadcastType.remove(player.getUniqueId());
 
-            // עדכון זמן Cooldown
             broadcastCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
 
-            // בניית ההודעה המעוצבת לכל השרת
             String header = "&8&l=====================================";
-            String titleMsg = "";
+            String titleMsg;
             if (type.equals("live")) titleMsg = "&c&l🔴 יוצר התוכן &f" + player.getName() + " &c&lהתחיל בשידור חי!";
             else if (type.equals("giveaway")) titleMsg = "&e&l🎁 יוצר התוכן &f" + player.getName() + " &e&lהכריז על הגרלה חדשה!";
             else titleMsg = "&b&l⭐ יוצר התוכן &f" + player.getName() + " &b&lהעלה סרטון / אירוע חדש!";
