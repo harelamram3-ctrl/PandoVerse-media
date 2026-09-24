@@ -123,7 +123,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
     public void onInventoryClick(InventoryClickEvent event) {
         String title = event.getView().getTitle();
         if (title.contains("PANDAVERSE - יוצרי תוכן") || title.contains("ניהול יוצרי תוכן - הנהלה")) {
-            event.setCancelled();
+            event.setCancelled(true); // תיקון כאן
             if (!(event.getWhoClicked() instanceof Player)) return;
             Player player = (Player) event.getWhoClicked();
 
@@ -143,7 +143,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
     public void onChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         if (pendingApplication.contains(player.getUniqueId())) {
-            event.setCancelled();
+            event.setCancelled(true); // תיקון כאן
             String link = event.getMessage();
             pendingApplication.remove(player.getUniqueId());
             submittedLinks.put(player.getUniqueId(), link);
