@@ -315,7 +315,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
                 else if (slot == 19) {
                     player.closeInventory();
                     Location loc = player.getLocation();
-                    loc.getWorld().spawnParticle(Particle.FIREWORK, loc.add(0, 1, 0), 35, 0.5, 1, 0.5, 0.1);
+                    loc.getWorld().spawnParticle(Particle.FIREWORKS_SPARK, loc.add(0, 1, 0), 35, 0.5, 1, 0.5, 0.1);
                     loc.getWorld().playSound(loc, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1f, 1f);
                     sendAlert(player, "&8[&bPandaCreators&8] &dשגרת זיקוקי קונפטי!");
                 }
