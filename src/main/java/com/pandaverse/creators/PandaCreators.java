@@ -32,7 +32,6 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
     private final Set<UUID> pendingApplication = new HashSet<>();
     private final Map<UUID, String> submittedLinks = new HashMap<>();
     
-    // מצבים של יוצרי תוכן
     private final Set<UUID> photoModeCreators = new HashSet<>();
     private final Set<UUID> eventModeCreators = new HashSet<>();
     private final Set<UUID> rainWeatherCreators = new HashSet<>();
@@ -54,7 +53,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         getCommand("creatorpanel").setExecutor(this);
         getServer().getPluginManager().registerEvents(this, this);
 
-        getLogger().info(ChatColor.GREEN + "PandaCreators has been enabled with Levels and ActionBars!");
+        getLogger().info(ChatColor.GREEN + "PandaCreators has been enabled successfully!");
     }
 
     private void loadConfigValues() {
@@ -68,12 +67,11 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(colored));
     }
 
-    // בדיקת רמת יוצר התוכן של השחקן לפי הרשאות
     private int getCreatorLevel(Player player) {
         if (player.hasPermission("panda.creator.level3") || player.isOp()) return 3;
         if (player.hasPermission("panda.creator.level2")) return 2;
         if (player.hasPermission("panda.creator.level1")) return 1;
-        return 0; // ללא רמה
+        return 0;
     }
 
     @Override
@@ -120,31 +118,28 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         int level = getCreatorLevel(player);
         Inventory gui = Bukkit.createInventory(null, 45, ChatColor.translateAlternateColorCodes('&', "&d&lפאנל יוצרי תוכן (רמה " + level + ")"));
 
-        // רמה 1 - זמין לכולם (רמה 1 ומעלה)
         boolean isFlying = player.getAllowFlight();
         gui.setItem(10, createGuiItem(level >= 1 ? (isFlying ? Material.FEATHER : Material.ENDER_PEARL) : Material.BARRIER, 
                 "&b&lמצב מעוף (Flight)", 
-                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "סטטוס: " + (isFlying ? ChatColor.GREEN + "מופעל" : ChatColor.RED + "כבוי"), level >= 1 ? ChatColor.YELLOW + "לחץ להפעלה/כיבוי." : ChatColor.CROSSED_OUT + "נעול לרמה גבוהה יותר")));
+                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "סטטוס: " + (isFlying ? ChatColor.GREEN + "מופעל" : ChatColor.RED + "כבוי"), level >= 1 ? ChatColor.YELLOW + "לחץ להפעלה/כיבוי." : ChatColor.STRIKETHROUGH + "נעול לרמה גבוהה יותר")));
 
         boolean isPhoto = photoModeCreators.contains(player.getUniqueId());
         gui.setItem(11, createGuiItem(level >= 1 ? (isPhoto ? Material.COMPARATOR : Material.CLOCK) : Material.BARRIER, 
                 "&e&lמצב צילום (שקט ובוקר)", 
-                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "מנקה צ'אט וקובע בוקר אישי.", level >= 1 ? ChatColor.YELLOW + "לחץ להפעלה/כיבוי." : ChatColor.CROSSED_OUT + "נעול")));
+                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "מנקה צ'אט וקובע בוקר אישי.", level >= 1 ? ChatColor.YELLOW + "לחץ להפעלה/כיבוי." : ChatColor.STRIKETHROUGH + "נעול")));
 
         gui.setItem(20, createGuiItem(level >= 1 ? Material.COMPASS : Material.BARRIER, 
                 "&6&lשמירת נקודת צילום", 
-                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "שמור מיקום נוכחי לחזרה מהירה.", level >= 1 ? ChatColor.YELLOW + "לחץ לשמירה." : ChatColor.CROSSED_OUT + "נעול")));
+                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "שמור מיקום נוכחי לחזרה מהירה.", level >= 1 ? ChatColor.YELLOW + "לחץ לשמירה." : ChatColor.STRIKETHROUGH + "נעול")));
 
         gui.setItem(21, createGuiItem(level >= 1 ? Material.ENDER_EYE : Material.BARRIER, 
                 "&5&lחזרה לנקודת הצילום", 
-                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "טלפורט מיידי למיקום ששמרת.", level >= 1 ? ChatColor.YELLOW + "לחץ לטלפורט." : ChatColor.CROSSED_OUT + "נעול")));
+                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "טלפורט מיידי למיקום ששמרת.", level >= 1 ? ChatColor.YELLOW + "לחץ לטלפורט." : ChatColor.STRIKETHROUGH + "נעול")));
 
         gui.setItem(23, createGuiItem(level >= 1 ? Material.POTION : Material.BARRIER, 
                 "&f&lמהירות תנועה קלה (Speed)", 
-                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "מעניק זריזות להליכה חלקה.", level >= 1 ? ChatColor.YELLOW + "לחץ להפעלה." : ChatColor.CROSSED_OUT + "נעול")));
+                Arrays.asList(ChatColor.GRAY + "דרישה: רמה 1+", ChatColor.GRAY + "מעניק זריזות להליכה חלקה.", level >= 1 ? ChatColor.YELLOW + "לחץ להפעלה." : ChatColor.STRIKETHROUGH + "נעול")));
 
-
-        // רמה 2 ומעלה
         boolean isHidden = hidePlayersMode.contains(player.getUniqueId());
         gui.setItem(13, createGuiItem(level >= 2 ? (isHidden ? Material.GLASS : Material.TINTED_GLASS) : Material.BARRIER, 
                 "&7&lהסתרת שחקנים בסביבה", 
@@ -164,8 +159,6 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
                 "&b&lאפקט זוהר לצילום (Glowing)", 
                 Arrays.asList(ChatColor.GRAY + "דרישה: &eרמה 2+", ChatColor.GRAY + "נותן לך זוהר קל בחושך.", level >= 2 ? ChatColor.YELLOW + "לחץ להפעלה." : ChatColor.RED + "דורש רמה 2!")));
 
-
-        // רמה 3 ומעלה (הכי מתקדם - איוונטים והכרזות)
         boolean isEvent = eventModeCreators.contains(player.getUniqueId());
         gui.setItem(12, createGuiItem(level >= 3 ? (isEvent ? Material.GOLDEN_APPLE : Material.SHIELD) : Material.BARRIER, 
                 "&a&lמצב איוונט (חסינות מוות)", 
@@ -246,7 +239,6 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
                 UUID uuid = player.getUniqueId();
                 int slot = event.getRawSlot();
 
-                // בדיקת הרשאות לפי רמות בלחיצה בפאנל
                 if ((slot == 10 || slot == 11 || slot == 20 || slot == 21 || slot == 23) && level < 1) {
                     sendAlert(player, "&cפאנל זה דורש לפחות רמה 1!");
                     return;
@@ -323,7 +315,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
                 else if (slot == 19) {
                     player.closeInventory();
                     Location loc = player.getLocation();
-                    loc.getWorld().spawnParticle(Particle.FIREWORK_ROCKET, loc.add(0, 1, 0), 35, 0.5, 1, 0.5, 0.1);
+                    loc.getWorld().spawnParticle(Particle.FIREWORK, loc.add(0, 1, 0), 35, 0.5, 1, 0.5, 0.1);
                     loc.getWorld().playSound(loc, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1f, 1f);
                     sendAlert(player, "&8[&bPandaCreators&8] &dשגרת זיקוקי קונפטי!");
                 }
