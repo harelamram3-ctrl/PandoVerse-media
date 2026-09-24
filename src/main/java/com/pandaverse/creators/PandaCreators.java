@@ -34,7 +34,7 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         getCommand("creatorperks").setExecutor(this);
         getServer().getPluginManager().registerEvents(this, this);
 
-        getLogger().info(ChatColor.GREEN + "PandaCreators (Ultimate Edition with Perks) has been enabled!");
+        getLogger().info(ChatColor.GREEN + "PandaCreators has been enabled successfully!");
     }
 
     private void loadConfigValues() {
@@ -73,11 +73,9 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         return false;
     }
 
-    // GUI ראשי לשחקנים
     private void openPlayerCreatorGUI(Player player) {
         Inventory gui = Bukkit.createInventory(null, 27, ChatColor.translateAlternateColorCodes('&', "&b&lPANDAVERSE - יוצרי תוכן"));
 
-        // פריט דרישות (משמאל)
         ItemStack paper = new ItemStack(Material.PAPER);
         ItemMeta paperMeta = paper.getItemMeta();
         paperMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&e&lדרישות הסף שלנו"));
@@ -92,7 +90,6 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         paper.setItemMeta(paperMeta);
         gui.setItem(10, paper);
 
-        // כפתור הגשת בקשה (באמצע)
         ItemStack applyItem = new ItemStack(Material.NETHER_STAR);
         ItemMeta applyMeta = applyItem.getItemMeta();
         applyMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&a&lהגש בקשה להיות יוצר תוכן"));
@@ -100,7 +97,6 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         applyItem.setItemMeta(applyMeta);
         gui.setItem(13, applyItem);
 
-        // כפתור צפייה בהטבות וגישות
         ItemStack perksItem = new ItemStack(Material.GOLD_BLOCK);
         ItemMeta perksMeta = perksItem.getItemMeta();
         perksMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&6&lהטבות וגישות ליוצרי תוכן"));
@@ -108,7 +104,6 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         perksItem.setItemMeta(perksMeta);
         gui.setItem(16, perksItem);
 
-        // כפתור דיסקורד למטה
         ItemStack discordItem = new ItemStack(Material.RED_BANNER);
         ItemMeta discordMeta = discordItem.getItemMeta();
         discordMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&b&lשרת הדיסקורד שלנו"));
@@ -119,11 +114,9 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         player.openInventory(gui);
     }
 
-    // GUI הטבות וגישות ליוצרי תוכן
     private void openPerksGUI(Player player) {
         Inventory gui = Bukkit.createInventory(null, 27, ChatColor.translateAlternateColorCodes('&', "&6&lPANDAVERSE - הטבות יוצרי תוכן"));
 
-        // הטבה 1: תואר מיוחד
         ItemStack rank = new ItemStack(Material.DIAMOND);
         ItemMeta rankMeta = rank.getItemMeta();
         rankMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&b&lתואר ייחודי בשרת ובדיסקורד"));
@@ -131,7 +124,6 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         rank.setItemMeta(rankMeta);
         gui.setItem(11, rank);
 
-        // הטבה 2: גישות מתקדמות
         ItemStack access = new ItemStack(Material.EMERALD);
         ItemMeta accessMeta = access.getItemMeta();
         accessMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&a&lגישות ופקודות נוחות"));
@@ -139,7 +131,6 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         access.setItemMeta(accessMeta);
         gui.setItem(13, access);
 
-        // הטבה 3: חשיפה בקהילה
         ItemStack exposure = new ItemStack(Material.GLOWSTONE_DUST);
         ItemMeta exposureMeta = exposure.getItemMeta();
         exposureMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&e&lחשיפה לקהילה שלנו"));
@@ -150,7 +141,6 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         player.openInventory(gui);
     }
 
-    // GUI ניהול להנהלה
     private void openAdminGUI(Player player) {
         Inventory gui = Bukkit.createInventory(null, 27, ChatColor.translateAlternateColorCodes('&', "&c&lניהול יוצרי תוכן - הנהלה"));
         
@@ -172,15 +162,14 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
             if (!(event.getWhoClicked() instanceof Player)) return;
             Player player = (Player) event.getWhoClicked();
 
-            // לחיצה בתפריט הראשי
             if (title.equals(ChatColor.translateAlternateColorCodes('&', "&b&lPANDAVERSE - יוצרי תוכן"))) {
-                if (event.getRawSlot() == 13) { // הגשת בקשה
+                if (event.getRawSlot() == 13) {
                     player.closeInventory();
                     pendingApplication.add(player.getUniqueId());
                     player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8[&bPandaCreators&8] &aאנא כתוב כעת בצ'אט את הקישור לערוץ היוטיוב / טיקטוק / שידור שלך:"));
-                } else if (event.getRawSlot() == 16) { // פתיחת תפריט הטבות
+                } else if (event.getRawSlot() == 16) {
                     openPerksGUI(player);
-                } else if (event.getRawSlot() == 22) { // דיסקורד
+                } else if (event.getRawSlot() == 22) {
                     player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8[&bPandaCreators&8] &7קישור הדיסקורד: &b" + discordLink));
                     player.closeInventory();
                 }
@@ -188,7 +177,6 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
         }
     }
 
-    // קליטת הקישור שהשחקן רושם בצ'אט
     @EventHandler
     public void onChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
@@ -200,7 +188,6 @@ public final class PandaCreators extends JavaPlugin implements CommandExecutor, 
 
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8[&bPandaCreators&8] &aהבקשה שלך נשלחה בהצלחה להנהלה!"));
 
-            // הודעה לכל המנהלים המחוברים
             for (Player online : Bukkit.getOnlinePlayers()) {
                 if (online.hasPermission("panda.admin.creator")) {
                     online.sendMessage(ChatColor.translateAlternateColorCodes('&', "&c[בקשת יוצר תוכן] &fהשחקן &b" + player.getName() + " &fהגיש בקשה!"));
