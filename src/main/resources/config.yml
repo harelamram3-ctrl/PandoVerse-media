@@ -1,0 +1,24 @@
+# הגדרות ראשיות עבור PandaCreators v2.0
+discord-link: "https://discord.gg/pandaverse"
+
+# שמות הקבוצות ב-LuckPerms (חייב להתאים לשמות הקבוצות שיצרת ב-/lp)
+luckperms:
+  enabled: true
+  groups:
+    level1: "creator1"
+    level2: "creator2"
+    level3: "creator3"
+  # האם להעניק הרשאה ישירה בנוסף לשיוך לקבוצה (מומלץ להשאיר true לגיבוי)
+  also-set-permission: true
+
+# הגדרות הכרזות (Broadcasts)
+broadcast:
+  cooldown-seconds: 300
+  sound: "ENTITY_ENDER_DRAGON_GROWL"
+
+# דרישות הסף המוצגות בתפריט /creator
+requirements:
+  - "&8• &fחובה להיות בשרת הדיסקורד שלנו!"
+  - "&8• &fהעלאת תוכן איכותי מהשרת (סרטונים / לייבים / טיקטוק)."
+  - "&8• &fמינימום צפיות או עוקבים סביר ופעילות שוטפת."
+  - "&8• &fשמירה על חוקי השרת וייצוג מכבד."

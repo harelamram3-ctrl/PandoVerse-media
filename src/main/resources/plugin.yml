@@ -1,0 +1,41 @@
+name: PandaCreators
+version: 2.0-SNAPSHOT
+main: com.pandaverse.creators.PandaCreators
+api-version: 1.20
+softdepend: [LuckPerms]
+description: מערכת ניהול וכלים מתקדמת ליוצרי תוכן ב-PANDAVERSE עם אינטגרציית LuckPerms
+
+commands:
+  creator:
+    description: פותח את התפריט הראשי של יוצרי התוכן
+    aliases: [creators, media, yt]
+  creatorperks:
+    description: מציג את הרמות וההטבות ליוצרי תוכן
+    aliases: [cperks]
+  creatorpanel:
+    description: פותח את לוח הבקרה ליוצרי תוכן
+    aliases: [cpanel, cp]
+  creatoradmin:
+    description: פותח את פאנל הניהול של הצוות
+    aliases: [cadmin, ca]
+
+permissions:
+  panda.creator.level1:
+    description: גישה לכלי יוצרי תוכן רמה 1
+    default: false
+  panda.creator.level2:
+    description: גישה לכלי יוצרי תוכן רמה 2
+    default: false
+    children:
+      panda.creator.level1: true
+  panda.creator.level3:
+    description: גישה לכלי יוצרי תוכן רמה 3
+    default: false
+    children:
+      panda.creator.level2: true
+  panda.creator.bypasscooldown:
+    description: עקיפת זמן המתנה להכרזות
+    default: op
+  panda.admin.creator:
+    description: ניהול בקשות ורמות של יוצרי תוכן
+    default: op
